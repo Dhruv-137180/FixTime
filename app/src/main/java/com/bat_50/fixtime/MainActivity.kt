@@ -3,26 +3,27 @@ package com.bat_50.fixtime
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bat_50.fixtime.ui.theme.FixTimeTheme
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.ReorderableLazyListState
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
+import java.text.SimpleDateFormat
+import java.util.*
+import org.burnoutcrew.reorderable.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.background
+import androidx.compose.ui.input.pointer.pointerInput
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +36,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimeManagementApp() {
     Scaffold(
@@ -54,77 +54,91 @@ fun AppTopBar() {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenContent(modifier: Modifier = Modifier) {
     var taskList by remember { mutableStateOf((1..5).map { "Task $it" }) }
 
-    // Reorderable state
-    val reorderState = rememberReorderableLazyListState(
-        onMove = { from, to ->
-            taskList = taskList.toMutableList().apply {
-                add(to.index, removeAt(from.index)) // Correctly move the item
-            }
-        }
-    )
-
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF3F4F6)) // Soft background color
-            .padding(16.dp),
+        modifier = modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Hello, User!",
-            fontSize = 24.sp,
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color(0xFF4A90E2) // Heading color
-        )
+        Text(text = "Hello, User!", fontSize = 24.sp, style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
         CurrentTimeDisplay()
         Spacer(modifier = Modifier.height(16.dp))
-        TaskList(taskList, reorderState)
+        TaskList(
+            taskList = taskList,
+            onTaskEdited = { index, newText ->
+                taskList = taskList.toMutableList().apply { set(index, newText) }
+            },
+            onReorder = { updatedList -> taskList = updatedList }
+        )
     }
 }
+
 
 @Composable
 fun CurrentTimeDisplay() {
     val currentTime = remember {
-        java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault()).format(java.util.Date())
+        SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
     }
     Text(text = "Current Time: $currentTime", fontSize = 18.sp, style = MaterialTheme.typography.bodyLarge)
 }
+
 @Composable
-fun TaskList(taskList: List<String>, reorderState: ReorderableLazyListState) {
-    // Ensure the reorderable state is properly applied to the LazyColumn
-    LazyColumn(state = reorderState.listState, modifier = Modifier
-        .fillMaxSize()
-        .reorderable(reorderState)) {
-        itemsIndexed(taskList, key = { _, item -> item }) { index, item ->
-            // Wrapping each item with ReorderableItem to allow dragging
-            ReorderableItem(reorderState, key = item) { isDragging ->
-                TaskItem(taskName = item, isDragging = isDragging)
+fun TaskList(taskList: List<String>, onTaskEdited: (Int, String) -> Unit, onReorder: (List<String>) -> Unit) {
+    val reorderState = rememberReorderableLazyListState(
+        onMove = { from, to ->
+            val updatedList = taskList.toMutableList().apply {
+                add(to.index, removeAt(from.index))
             }
+            onReorder(updatedList)
+        }
+    )
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .reorderable(reorderState)
+            .detectReorderAfterLongPress(reorderState),
+        state = reorderState.listState
+    ) {
+        itemsIndexed(taskList, key = { _, item -> item }) { index, task ->
+            TaskItem(
+                index = index,
+                taskName = task,
+                onTaskEdited = onTaskEdited,
+                modifier = Modifier.draggedItem(reorderState, index)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            )
         }
     }
 }
-
 @Composable
-fun TaskItem(taskName: String, isDragging: Boolean) {
-    // Item card appearance when dragging or idle
+fun TaskItem(index: Int, taskName: String, onTaskEdited: (Int, String) -> Unit, modifier: Modifier = Modifier) {
+    var isEditing by remember { mutableStateOf(false) }
+    var text by remember { mutableStateOf(taskName) }
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp) // Increased padding for better spacing
-            .background(if (isDragging) Color(0xFFE1E8ED) else Color.White), // Highlight color while dragging
+            .padding(vertical = 4.dp)
+            .clickable { isEditing = true }, // Click to enter edit mode
         shape = MaterialTheme.shapes.medium
     ) {
-        Box(
-            modifier = Modifier.padding(16.dp),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            BasicText(text = taskName, style = MaterialTheme.typography.bodyLarge)
+        Box(modifier = Modifier.padding(16.dp)) {
+            if (isEditing) {
+                BasicTextField(
+                    value = text,
+                    onValueChange = { newText ->
+                        text = newText
+                        onTaskEdited(index, newText)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                Text(text = text, style = MaterialTheme.typography.bodyLarge)
+            }
         }
     }
 }
