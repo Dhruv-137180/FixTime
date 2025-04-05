@@ -1,6 +1,5 @@
 package com.bat_50.fixtime.di
 
-
 import android.content.Context
 import androidx.room.Room
 import com.bat_50.fixtime.data.AppDatabase
@@ -8,6 +7,7 @@ import com.bat_50.fixtime.data.task.TaskDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -15,16 +15,18 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    @Singleton
     @Provides
-    fun provideDatabase(appContext: Context): AppDatabase {
+    @Singleton
+    fun provideDatabase(@ApplicationContext appContext: Context): AppDatabase {
         return Room.databaseBuilder(
             appContext,
             AppDatabase::class.java,
-            "fix_time_db"
+            "task_database"
         ).build()
     }
 
     @Provides
-    fun provideTaskDao(db: AppDatabase): TaskDao = db.taskDao()
+    fun provideTaskDao(db: AppDatabase): TaskDao {
+        return db.taskDao()
+    }
 }
