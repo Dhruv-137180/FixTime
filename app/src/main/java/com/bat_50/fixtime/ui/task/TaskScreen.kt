@@ -115,3 +115,20 @@ fun TaskItem(task: Task, onUpdate: (Task) -> Unit) {
         )
     }
 }
+
+@Composable
+fun TaskScreen(
+    viewModel: TaskViewModel = hiltViewModel(),
+    onNavigateToPomodoro: () -> Unit
+) {
+    // Your task list UI...
+
+    Button(
+        onClick = onNavigateToPomodoro,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text("Start Pomodoro")
+    }
+}

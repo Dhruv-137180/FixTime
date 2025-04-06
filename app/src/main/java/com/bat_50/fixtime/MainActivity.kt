@@ -3,11 +3,12 @@ package com.bat_50.fixtime
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import com.bat_50.fixtime.ui.task.TaskScreen
 import com.bat_50.fixtime.theme.FixTimeTheme
+import com.bat_50.fixtime.ui.FixTimeApp
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.compose.ui.Modifier
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -15,8 +16,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FixTimeTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    TaskScreen() // 👈 Hooking up the Task screen
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    FixTimeApp() // THIS MUST BE HERE
                 }
             }
         }
