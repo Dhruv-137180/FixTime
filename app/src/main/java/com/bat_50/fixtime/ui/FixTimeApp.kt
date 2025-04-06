@@ -17,7 +17,7 @@ fun NavGraph(navController: NavHostController) {
         composable(Screen.Pomodoro.route) {
             PomodoroScreen(viewModel = hiltViewModel()) // 👈 preserves viewModel across tabs
         }
-        composable(Screen.Tasks.route) {
+        composable(Screen.Task.route) {
             TaskScreen()
         }
         composable(Screen.Profile.route) {
