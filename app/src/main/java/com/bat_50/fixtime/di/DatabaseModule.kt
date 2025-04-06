@@ -3,6 +3,7 @@ package com.bat_50.fixtime.di
 import android.content.Context
 import androidx.room.Room
 import com.bat_50.fixtime.data.AppDatabase
+import com.bat_50.fixtime.data.pomodoro.PomodoroDao
 import com.bat_50.fixtime.data.task.TaskDao
 import dagger.Module
 import dagger.Provides
@@ -22,11 +23,19 @@ object DatabaseModule {
             appContext,
             AppDatabase::class.java,
             "task_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration() // ✅ Add this line
+            .build()
     }
+
 
     @Provides
     fun provideTaskDao(db: AppDatabase): TaskDao {
         return db.taskDao()
     }
+    @Provides
+    fun providePomodoroDao(db: AppDatabase): PomodoroDao {
+        return db.pomodoroDao()
+    }
+
 }

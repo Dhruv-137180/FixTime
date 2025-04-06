@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.bat_50.fixtime.ui.pomodoro.PomodoroScreen
+import com.bat_50.fixtime.ui.profile.ProfileScreen
 import com.bat_50.fixtime.ui.task.TaskScreen
 
 @Composable
@@ -19,6 +20,8 @@ fun NavGraph(navController: NavHostController) {
         composable(Screen.Pomodoro.route) {
             PomodoroScreen()
         }
-
+        composable(Screen.Profile.route) {
+            ProfileScreen()
+        }
     }
 }

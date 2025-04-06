@@ -14,98 +14,56 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun PomodoroScreen() {
-    val context = LocalContext.current
-    var timeInMinutes by remember { mutableStateOf(25) }
-    var remainingTime by remember { mutableStateOf(timeInMinutes * 60) }
-    var isRunning by remember { mutableStateOf(false) }
-    var isFinished by remember { mutableStateOf(false) }
+fun PomodoroScreen(
+    viewModel: PomodoroViewModel = hiltViewModel()
+) {
+    val timeLeft by viewModel.timeLeft
+    val isRunning = viewModel.isTimerRunning()
+    val isPaused = viewModel.isTimerPaused()
 
-    val ringtone: Ringtone by remember {
-        val notification: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        mutableStateOf(RingtoneManager.getRingtone(context, notification))
-    }
-
-    LaunchedEffect(isRunning) {
-        if (isRunning) {
-            while (remainingTime > 0) {
-                delay(1000L)
-                remainingTime--
-            }
-            isRunning = false
-            isFinished = true
-            ringtone.play()
-        }
-    }
-
-    fun formatTime(seconds: Int): String {
-        val minutes = TimeUnit.SECONDS.toMinutes(seconds.toLong())
-        val secs = seconds % 60
-        return String.format("%02d:%02d", minutes, secs)
-    }
+    val minutes = (timeLeft / 1000) / 60
+    val seconds = (timeLeft / 1000) % 60
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Pomodoro Timer",
-            style = MaterialTheme.typography.headlineMedium,
+            text = String.format("%02d:%02d", minutes, seconds),
+            fontSize = 48.sp,
             fontWeight = FontWeight.Bold
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
-            text = formatTime(remainingTime),
-            fontSize = 64.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        if (!isRunning && !isFinished) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Focus Time (min): ", fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Slider(
-                    value = timeInMinutes.toFloat(),
-                    onValueChange = {
-                        timeInMinutes = it.toInt()
-                        remainingTime = timeInMinutes * 60
-                    },
-                    valueRange = 5f..60f,
-                    steps = 11
-                )
-                Text("$timeInMinutes", fontWeight = FontWeight.Bold)
+        when {
+            !isRunning && !isPaused -> {
+                Button(onClick = { viewModel.startTimer() }) {
+                    Text("Start")
+                }
+            }
+            isRunning -> {
+                Button(onClick = { viewModel.pauseTimer() }) {
+                    Text("Pause")
+                }
+            }
+            isPaused -> {
+                Button(onClick = { viewModel.resumeTimer() }) {
+                    Text("Resume")
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                isRunning = true
-                isFinished = false
-                remainingTime = timeInMinutes * 60
-            },
-            enabled = !isRunning
-        ) {
-            Text("Start Focus")
-        }
-
-        if (isFinished) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Time's up!", color = Color.Red, fontWeight = FontWeight.Bold)
+        Button(onClick = { viewModel.resetTimer() }) {
+            Text("Reset")
         }
     }
 }

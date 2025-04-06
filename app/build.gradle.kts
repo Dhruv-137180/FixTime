@@ -61,6 +61,7 @@ dependencies {
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.52")
+    implementation(libs.play.services.tasks)
     kapt("com.google.dagger:hilt-compiler:2.52")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0") // 👈 Add this
 
