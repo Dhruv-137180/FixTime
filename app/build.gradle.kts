@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.application)
     id("com.google.dagger.hilt.android")
+    id("androidx.room") version "2.7.0-rc03" // ✅ Add this line
 }
 
 android {
@@ -44,7 +45,14 @@ android {
     buildFeatures {
         compose = true
     }
+
+    room {
+        schemaDirectory("debug", layout.buildDirectory.dir("schemas"))
+        schemaDirectory("release", layout.buildDirectory.dir("schemas"))
+    }
 }
+
+
 
 dependencies {
     // Compose
@@ -63,13 +71,12 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.52")
     implementation(libs.play.services.tasks)
     kapt("com.google.dagger:hilt-compiler:2.52")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0") // 👈 Add this
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Room
     kapt("androidx.room:room-compiler:2.7.0-rc03")
     implementation("androidx.room:room-runtime:2.7.0-rc03")
     implementation("androidx.room:room-ktx:2.7.0-rc03")
-
 
     // Tests
     testImplementation(libs.junit)

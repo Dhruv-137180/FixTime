@@ -1,78 +1,55 @@
 package com.bat_50.fixtime.ui.pomodoro
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bat_50.fixtime.data.pomodoro.PomodoroRepository
 import com.bat_50.fixtime.data.pomodoro.PomodoroSession
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
 class PomodoroViewModel @Inject constructor(
-    private val pomodoroRepository: PomodoroRepository
+    private val repository: PomodoroRepository
 ) : ViewModel() {
 
-    private var timer: CountDownTimer? = null
-    private var _timeLeft = mutableStateOf(25 * 60 * 1000L) // 25 minutes
-    val timeLeft: State<Long> = _timeLeft
+    var timeLeft by mutableStateOf(1500) // 25 minutes
+        private set
 
-    private var isRunning = mutableStateOf(false)
-    private var isPaused = mutableStateOf(false)
-    private var startTime: Long? = null
-    private var pauseTimeLeft: Long = 0L
+    val allSessions: StateFlow<List<PomodoroSession>> =
+        repository.getAllSessions()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun startTimer(duration: Long = 25 * 60 * 1000L) {
-        if (isRunning.value) return
-
-        isRunning.value = true
-        isPaused.value = false
-        startTime = System.currentTimeMillis()
-
-        timer = object : CountDownTimer(duration, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                _timeLeft.value = millisUntilFinished
-                pauseTimeLeft = millisUntilFinished
-            }
-
-            override fun onFinish() {
-                isRunning.value = false
-                savePomodoroSession(startTime!!, System.currentTimeMillis())
-                _timeLeft.value = 0L
-            }
-        }.start()
+    fun tick() {
+        if (timeLeft > 0) timeLeft--
     }
 
-    fun pauseTimer() {
-        if (!isRunning.value) return
-        timer?.cancel()
-        timer = null
-        isRunning.value = false
-        isPaused.value = true
+    fun reset() {
+        timeLeft = 1500
     }
 
-    fun resumeTimer() {
-        if (isPaused.value) {
-            startTimer(pauseTimeLeft)
-        }
+    fun setCustomTime(seconds: Int) {
+        timeLeft = seconds
     }
 
-    fun resetTimer() {
-        timer?.cancel()
-        timer = null
-        isRunning.value = false
-        isPaused.value = false
-        _timeLeft.value = 25 * 60 * 1000L
-    }
+    fun getFocusTimeToday(): Long {
+        val now = System.currentTimeMillis()
+        val startOfDay = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
 
-    private fun savePomodoroSession(start: Long, end: Long) {
-        viewModelScope.launch {
-            pomodoroRepository.insertSession(PomodoroSession(startTime = start, endTime = end))
-        }
+        return allSessions.value
+            .filter { it.startTime >= startOfDay && it.endTime <= now }
+            .sumOf { it.endTime - it.startTime }
     }
-
-    fun isTimerRunning(): Boolean = isRunning.value
-    fun isTimerPaused(): Boolean = isPaused.value
 }

@@ -1,27 +1,32 @@
 package com.bat_50.fixtime.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.bat_50.fixtime.ui.pomodoro.PomodoroScreen
-import com.bat_50.fixtime.ui.task.TaskScreen
-import com.bat_50.fixtime.ui.profile.ProfileScreen
-import com.bat_50.fixtime.ui.navigation.Screen
+import androidx.compose.material3.Scaffold
+import androidx.compose.ui.Modifier
+import androidx.navigation.compose.rememberNavController
+import com.bat_50.fixtime.ui.components.BottomNavBar
+import com.bat_50.fixtime.ui.components.TopBar
+import com.bat_50.fixtime.ui.navigation.NavGraph
 
 
 @Composable
-fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = Screen.Pomodoro.route) {
-        composable(Screen.Pomodoro.route) {
-            PomodoroScreen(viewModel = hiltViewModel()) // 👈 preserves viewModel across tabs
+fun FixTimeApp() {
+    val navController = rememberNavController()
+
+    Scaffold(
+        topBar = { TopBar() },
+        bottomBar = { BottomNavBar(navController = navController) },
+        content = { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                NavGraph(navController = navController) // <- this must be here!
+            }
         }
-        composable(Screen.Task.route) {
-            TaskScreen()
-        }
-        composable(Screen.Profile.route) {
-            ProfileScreen()
-        }
-    }
+    )
 }

@@ -1,69 +1,79 @@
 package com.bat_50.fixtime.ui.pomodoro
 
-import android.media.RingtoneManager
-import android.media.Ringtone
-import android.net.Uri
-import androidx.compose.foundation.background
+import android.media.MediaPlayer
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PomodoroScreen(
-    viewModel: PomodoroViewModel = hiltViewModel()
-) {
-    val timeLeft by viewModel.timeLeft
-    val isRunning = viewModel.isTimerRunning()
-    val isPaused = viewModel.isTimerPaused()
+fun PomodoroScreen() {
+    val totalDuration = Duration.ofMinutes(25)
+    var remainingTime by remember { mutableStateOf(totalDuration) }
+    var isRunning by remember { mutableStateOf(false) }
 
-    val minutes = (timeLeft / 1000) / 60
-    val seconds = (timeLeft / 1000) % 60
+    // For sound at the end (optional)
+    var mediaPlayer: MediaPlayer? = null
 
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = String.format("%02d:%02d", minutes, seconds),
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold
-        )
+    // Timer logic
+    LaunchedEffect(isRunning) {
+        while (isRunning && !remainingTime.isZero && !remainingTime.isNegative) {
+            delay(1000)
+            remainingTime = remainingTime.minusSeconds(1)
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        when {
-            !isRunning && !isPaused -> {
-                Button(onClick = { viewModel.startTimer() }) {
-                    Text("Start")
-                }
-            }
-            isRunning -> {
-                Button(onClick = { viewModel.pauseTimer() }) {
-                    Text("Pause")
-                }
-            }
-            isPaused -> {
-                Button(onClick = { viewModel.resumeTimer() }) {
-                    Text("Resume")
-                }
+            // When finished, stop and play sound
+            if (remainingTime.isZero) {
+                isRunning = false
+                // TODO: Play a ringtone or show notification
+                // mediaPlayer = MediaPlayer.create(context, R.raw.ringtone)
+                // mediaPlayer?.start()
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
+    val totalSeconds = totalDuration.seconds.toFloat()
+    val remainingSeconds = remainingTime.seconds.toFloat()
+    val progress = (remainingSeconds / totalSeconds).coerceIn(0f, 1f) // ✅ FIXED division here
 
-        Button(onClick = { viewModel.resetTimer() }) {
-            Text("Reset")
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Pomodoro Timer") })
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CircularProgressIndicator(
+                progress = progress,
+                strokeWidth = 8.dp,
+                modifier = Modifier.size(200.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = String.format(
+                    "%02d:%02d",
+                    remainingTime.toMinutesPart(),
+                    remainingTime.toSecondsPart()
+                ),
+                style = MaterialTheme.typography.headlineLarge
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(onClick = { isRunning = !isRunning }) {
+                Text(if (isRunning) "Pause" else "Start")
+            }
         }
     }
 }

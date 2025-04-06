@@ -11,7 +11,7 @@ import com.bat_50.fixtime.data.pomodoro.PomodoroDao
 @Database(
     entities = [Task::class, PomodoroSession::class], // 👈 include all your entities here
     version = 2, // 👈 bump this if you change schema
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
